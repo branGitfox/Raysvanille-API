@@ -5,8 +5,8 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
 from .database import database
 from .database.models import models
-from .router import user, role_page, auth, customer, shop, category, genre, size, color, product, supplier, portfolio, \
-    stock_mouvement, sell, depense
+from .router import user, role_page, auth, customer, shop, category, genre, size, color, product, supplier, portfolio, tag
+
 import os
 # config = SecurityConfig(
 #     enable_rate_limiting=True,
@@ -53,9 +53,10 @@ app.include_router(color.router)
 app.include_router(product.router)
 app.include_router(supplier.router)
 app.include_router(portfolio.router)
-app.include_router(stock_mouvement.router)
-app.include_router(sell.router)
-app.include_router(depense.router)
+# app.include_router(stock_mouvement.router)
+# app.include_router(sell.router)
+# app.include_router(depense.router)
+app.include_router(tag.router)
 app.get('/')
 def root():
     return {"message": "Hello world"}

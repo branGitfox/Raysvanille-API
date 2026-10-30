@@ -68,6 +68,9 @@ def get_stock(id:int, db:Session=Depends(database.get_db), current_user:int=Depe
     return stocks
 
 
+
+
+
 # Ajout de nouveau de combinaison (size_id, color_id, count)
 @router.post('/products/stocks', status_code=status.HTTP_201_CREATED)
 def add_stock(content: schemas.AddSStock, db:Session=Depends(database.get_db), current_user:int=Depends(Oauth.get_current_user)):
