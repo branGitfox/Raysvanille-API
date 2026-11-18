@@ -172,36 +172,67 @@ def build_html(first_name, title, message, cta_label, cta_url, preheader=""):
 """
 
 
+
+import smtplib
+
+from email.message import EmailMessage
+from email.utils import formataddr
+
+
 def send_test_email():
-    email_user = "test@example.com"
-    to_email = "destinataire@example.com"
-    server, port = "127.0.0.1", 1025
+    email_user = "raysvanille@gmail.com"
+    email_password = "jpyk otxt vvst rzdc"
+
+    to_email = "raysvanille@gmail.com"
+
+    server = "smtp.gmail.com"
+    port = 587
 
     subject = "Bienvenue chez Ray's Vanille"
     first_name = "Client"
-    message = ("Merci pour votre intérêt. Découvrez nos gousses de vanille, "
-               "sélectionnées avec soin et préparées dans le respect de la tradition.")
+
+    message = (
+        "Merci pour votre intérêt. Découvrez nos gousses de vanille, "
+        "sélectionnées avec soin et préparées dans le respect de la tradition."
+    )
+
     cta_url = BRAND["site"]
 
-    html = build_html(first_name, "Le parfum de la vraie vanille", message,
-                      "Découvrir nos produits", cta_url,
-                      preheader="Découvrez notre sélection de vanille.")
+    html = build_html(
+        first_name,
+        "Le parfum de la vraie vanille",
+        message,
+        "Découvrir nos produits",
+        cta_url,
+        preheader="Découvrez notre sélection de vanille."
+    )
 
     msg = EmailMessage()
     msg["Subject"] = subject
     msg["From"] = formataddr((BRAND["name"], email_user))
     msg["To"] = to_email
 
-    msg.set_content(f"Bonjour {first_name},\n\n{message}\n\nDécouvrir : {cta_url}\n\n{BRAND['name']}")
+    msg.set_content(
+        f"Bonjour {first_name},\n\n"
+        f"{message}\n\n"
+        f"Découvrir : {cta_url}\n\n"
+        f"{BRAND['name']}"
+    )
+
     msg.add_alternative(html, subtype="html")
 
     try:
-        with smtplib.SMTP(server, port, timeout=10) as smtp:
+        with smtplib.SMTP(server, port, timeout=30) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.ehlo()
+            smtp.login(email_user, email_password)
             smtp.send_message(msg)
+
         print("Email envoyé avec succès !")
+
+    except smtplib.SMTPAuthenticationError:
+        print("Erreur : authentification Gmail échouée.")
+
     except Exception as e:
         print(f"Erreur d'envoi : {e}")
-
-
-if __name__ == "__main__":
-    send_test_email()
