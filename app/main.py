@@ -5,7 +5,8 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
 from .database import database
 from .database.models import models
-from .router import user, role_page, auth, customer, shop, category, genre, size, color, product, supplier, portfolio, tag
+from .router import user, role_page, auth, customer, shop, category, genre, size, color, product, supplier, portfolio, \
+    tag, content, order
 
 import os
 # config = SecurityConfig(
@@ -30,7 +31,7 @@ app = FastAPI()
 # app.add_middleware(SecurityMiddleware, config=config)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost", "http://localhost:5174", "https://paulamode.shop", "https://www.paulamode.shop"],
+    allow_origins=["http://localhost:5173", "http://57.128.67.164", "http://localhost:3000", "https://paulamode.shop", "https://www.paulamode.shop"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -53,13 +54,18 @@ app.include_router(color.router)
 app.include_router(product.router)
 app.include_router(supplier.router)
 app.include_router(portfolio.router)
-# app.include_router(stock_mouvement.router)
-# app.include_router(sell.router)
+app.include_router(content.router)
+app.include_router(order.router)
+
 # app.include_router(depense.router)
+from app.utils.utils import  send_test_email
 app.include_router(tag.router)
 app.get('/')
 def root():
+
     return {"message": "Hello world"}
+
+
 
 
 

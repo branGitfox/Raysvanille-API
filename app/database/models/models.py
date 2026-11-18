@@ -47,13 +47,12 @@ class User(Base):
 class Customer(Base):
     __tablename__= "customers"
     id = Column(Integer, primary_key=True, nullable=False)
-    client_name = Column(String(50), nullable=False )
-    is_promoted = Column(Boolean, nullable=False, server_default="false")
-    notes = Column(Text, nullable=True)
-    phone = Column(Numeric, nullable=False)
-    cin = Column(Numeric, nullable=False)
+    client_name = Column(String(50), nullable=False)
+    phone = Column(Numeric, nullable=True)
     picture_url = Column(Text, nullable=False)
-    is_reseller = Column(Boolean, nullable=False, server_default="false")
+
+    email = Column(String, nullable=False)
+    orders = relationship('Orders', back_populates="customer")
     created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
 
 
@@ -110,6 +109,58 @@ class Images(Base):
     image_url = Column(Text, nullable=False)
     product = relationship('Product', back_populates='images')
     product_id = Column(Integer, ForeignKey('products.id', ondelete="CASCADE"))
+
+
+
+from sqlalchemy import Column, Integer, String, Text, CheckConstraint
+
+class Content(Base):
+    __tablename__ = "contents"
+    __table_args__ = (CheckConstraint("id = 1", name="single_row_content"),)
+
+    id = Column(Integer, primary_key=True)
+    surtitre = Column(String, nullable=False)
+    titre_principale = Column(String, nullable=False)
+    deck = Column(String, nullable=False)
+    recit_narratif = Column(Text, nullable=False)
+    note_territoir = Column(Text, nullable=False, default="")
+    message_annonce = Column(String, nullable=False)
+    text_bouton_action = Column(String, nullable=False)
+    kicker = Column(String, nullable=False)
+    accroche = Column(String, nullable=False)
+    sous_titre = Column(String, nullable=False)
+    num_whatsapp = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+    ville = Column(String, nullable=False)
+
+ # model pour les commandes
+class Orders(Base):
+     __tablename__ = "orders"
+     id = Column(Integer, primary_key=True)
+     phone = Column(String, nullable=False)
+     code = Column(String, unique=True, nullable=False)
+     customer_name = Column(String, nullable=False)
+     city = Column(String, nullable=False)
+     localisation = Column(String, nullable=False)
+     total_purchase = Column(Integer, nullable=False)
+     status = Column(String, nullable=False)
+     items= relationship('OrderItem', back_populates="order")
+     customer_id = Column(Integer, ForeignKey('customers.id', ondelete="CASCADE"), nullable=False)
+     customer = relationship('Customer', back_populates="orders")
+     created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"), nullable=False)
+
+
+
+class OrderItem(Base):
+    __tablename__ = "order_items"
+    id = Column(Integer, primary_key=True)
+    tag = Column(String, nullable=True)
+    order_id = Column(Integer, ForeignKey("orders.id", ondelete="CASCADE"))
+    item_name = Column(String, nullable=False)
+    quantity = Column(Integer, nullable =False)
+    order = relationship("Orders", back_populates = "items")
+
+
 
 
 

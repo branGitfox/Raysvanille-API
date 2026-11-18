@@ -5,6 +5,7 @@ from fastapi import UploadFile
 from pwdlib import PasswordHash
 from app.config.config import settings
 from fastapi import HTTPException, status
+from email_free_fast_email import send_email as smtp_send_email
 password_context = PasswordHash.recommended()
 import os
 import shutil
@@ -53,3 +54,154 @@ def remove_old_pictures(image:UploadFile, old_image:str):
 def remove_pictures(image:str):
     if os.path.exists(image[len(f"{settings.api_url}/"):]):
             os.remove(image[len(f"{settings.api_url}/"):])
+
+
+# pour l'envoie d'email
+
+
+import smtplib
+from email.message import EmailMessage
+
+
+import smtplib
+from email.message import EmailMessage
+from email.utils import formataddr
+from html import escape
+
+BRAND = {
+    "name": "Ray's Vanille",
+    "site": "https://raysvanille.vercel.app/",
+    "logo_url": "",  # URL publique de ton logo (laisse vide pour afficher le nom en texte)
+    "bg": "#F6EFE3",        # fond crème
+    "card": "#FFFDF8",      # carte blanche cassée
+    "text": "#3B2A1E",      # brun foncé
+    "muted": "#8A7563",     # brun clair
+    "accent": "#B8893B",    # doré vanille
+    "dark": "#2B1D14",      # brun très foncé (header/footer)
+}
+
+
+def build_html(first_name, title, message, cta_label, cta_url, preheader=""):
+    b = BRAND
+    first_name, title, message = escape(first_name), escape(title), escape(message)
+    logo = (
+        f'<img src="{b["logo_url"]}" alt="{b["name"]}" height="48" style="display:block;margin:0 auto;border:0;">'
+        if b["logo_url"]
+        else f'<span style="font-family:Georgia,\'Times New Roman\',serif;font-size:28px;'
+             f'letter-spacing:2px;color:{b["accent"]};">{b["name"].upper()}</span>'
+    )
+
+    return f"""\
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{title}</title>
+</head>
+<body style="margin:0;padding:0;background:{b['bg']};">
+  <!-- Preheader (texte d'aperçu dans la boîte de réception) -->
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:{b['bg']};">{escape(preheader)}</div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{b['bg']};">
+    <tr><td align="center" style="padding:32px 12px;">
+
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0"
+             style="width:100%;max-width:600px;background:{b['card']};border-radius:16px;overflow:hidden;
+                    box-shadow:0 4px 20px rgba(59,42,30,0.08);">
+
+        <!-- Header -->
+        <tr>
+          <td align="center" style="background:{b['dark']};padding:32px 24px;">
+            {logo}
+            <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:3px;
+                        color:#CBB89A;margin-top:8px;text-transform:uppercase;">
+              Vanille de Madagascar
+            </div>
+          </td>
+        </tr>
+
+        <!-- Bande dorée -->
+        <tr><td style="height:4px;background:{b['accent']};font-size:0;line-height:0;">&nbsp;</td></tr>
+
+        <!-- Contenu -->
+        <tr>
+          <td style="padding:40px 40px 16px;font-family:Georgia,'Times New Roman',serif;color:{b['text']};">
+            <h1 style="margin:0 0 16px;font-size:28px;font-weight:normal;color:{b['text']};">
+              Bonjour {first_name},
+            </h1>
+            <h2 style="margin:0 0 16px;font-size:18px;font-weight:normal;color:{b['accent']};">
+              {title}
+            </h2>
+            <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.7;color:{b['text']};">
+              {message}
+            </p>
+          </td>
+        </tr>
+
+        <!-- Bouton -->
+        <tr>
+          <td align="center" style="padding:24px 40px 40px;">
+            <a href="{cta_url}"
+               style="display:inline-block;background:{b['accent']};color:#ffffff;text-decoration:none;
+                      font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;
+                      letter-spacing:1px;padding:14px 36px;border-radius:999px;">
+              {escape(cta_label)}
+            </a>
+          </td>
+        </tr>
+
+        <!-- Séparateur -->
+        <tr><td style="padding:0 40px;"><hr style="border:0;border-top:1px solid #EADFCB;margin:0;"></td></tr>
+
+        <!-- Footer -->
+        <tr>
+          <td align="center" style="padding:24px 40px 32px;font-family:Arial,Helvetica,sans-serif;
+                                    font-size:12px;line-height:1.6;color:{b['muted']};">
+            Vous recevez cet email car vous êtes en relation avec {b['name']}.<br>
+            <a href="{b['site']}" style="color:{b['accent']};text-decoration:none;">{b['site'].replace('https://', '')}</a><br>
+            © 2026 {b['name']}. Tous droits réservés.
+          </td>
+        </tr>
+      </table>
+
+    </td></tr>
+  </table>
+</body>
+</html>
+"""
+
+
+def send_test_email():
+    email_user = "test@example.com"
+    to_email = "destinataire@example.com"
+    server, port = "127.0.0.1", 1025
+
+    subject = "Bienvenue chez Ray's Vanille"
+    first_name = "Client"
+    message = ("Merci pour votre intérêt. Découvrez nos gousses de vanille, "
+               "sélectionnées avec soin et préparées dans le respect de la tradition.")
+    cta_url = BRAND["site"]
+
+    html = build_html(first_name, "Le parfum de la vraie vanille", message,
+                      "Découvrir nos produits", cta_url,
+                      preheader="Découvrez notre sélection de vanille.")
+
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = formataddr((BRAND["name"], email_user))
+    msg["To"] = to_email
+
+    msg.set_content(f"Bonjour {first_name},\n\n{message}\n\nDécouvrir : {cta_url}\n\n{BRAND['name']}")
+    msg.add_alternative(html, subtype="html")
+
+    try:
+        with smtplib.SMTP(server, port, timeout=10) as smtp:
+            smtp.send_message(msg)
+        print("Email envoyé avec succès !")
+    except Exception as e:
+        print(f"Erreur d'envoi : {e}")
+
+
+if __name__ == "__main__":
+    send_test_email()

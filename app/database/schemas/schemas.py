@@ -1,9 +1,12 @@
 import uuid
 from datetime import datetime
+from decimal import Decimal
 from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict, Field
 from sqlalchemy import Boolean, Uuid
+
+from app.database.models.models import Customer
 
 
 class User(BaseModel):
@@ -82,10 +85,10 @@ class Page(BaseModel):
 
 
 class CustomerCreation(BaseModel):
-    client_name:str
-    notes:str
-    phone:int
-    cin:int
+    client_name: str
+    # phone: Decimal
+    picture_url: str
+    email: EmailStr
 
 
 
@@ -436,19 +439,14 @@ class DepenseCreation(BaseModel):
 class CustomerView(BaseModel):
     id:int
     client_name:str
-    notes:Optional[str]=''
-    phone:int
-    cin:int
+    phone:Optional[str]
     picture_url:str
-    is_promoted:bool
-    is_reseller: bool
-    # total_purchases: int
-    # total_invoices: int
-    invoices: List[InvoicesView]
+    email:str
     created_at:datetime
 
 
 class TagView(BaseModel):
+    id:int
     tag_name:str
     quantity:int
 
@@ -472,3 +470,81 @@ class ProductView(BaseModel):
     tags: List[TagView]
     images: List[ImageView]
     created_at: datetime
+
+
+
+class Stock(BaseModel):
+    stock:int
+
+
+
+class ContentBase(BaseModel):
+    surtitre: str = Field(min_length=1)
+    titre_principale: str = Field(min_length=1)
+    deck: str = Field(min_length=1)
+    recit_narratif: str = Field(min_length=1)
+    note_territoir: str = ""          # optionnel côté formulaire
+    message_annonce: str = Field(min_length=1)
+    text_bouton_action: str = Field(min_length=1)
+    kicker: str = Field(min_length=1)
+    accroche: str = Field(min_length=1)
+    sous_titre: str = Field(min_length=1)
+    num_whatsapp: str = Field(min_length=1)
+    email: EmailStr                   # nécessite: pip install email-validator
+    ville: str = Field(min_length=1)
+
+
+class ContentCreate(ContentBase):
+    pass
+
+
+class ContentUpdate(ContentBase):
+    pass
+
+
+class ContentOut(ContentBase):
+    id: int
+    model_config = ConfigDict(from_attributes=True)
+
+
+# liste des artiles dans les commandes
+class OrderItemCreation(BaseModel):
+    item_id:int
+    item_name:str
+    quantity:int
+    tag:Optional[str]
+
+
+class OrderItemView(BaseModel):
+
+    item_name:str
+    quantity:int
+    tag:Optional[str]
+
+# commandes
+class OrderCreation(BaseModel):
+    customer_name:str
+    city:str
+    phone:str
+    localisation:str
+    total_purchase:int
+    email:EmailStr
+    items:str
+
+
+class OrderView(BaseModel):
+    id:int
+    city:str
+    customer_name:str
+    localisation:str
+    total_purchase:int
+    phone:str
+    status:str
+    code:str
+    customer:CustomerView
+    items: List[OrderItemView]
+    created_at:datetime
+
+
+class StatusUpdate(BaseModel):
+    status:str

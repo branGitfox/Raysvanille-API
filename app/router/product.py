@@ -49,14 +49,14 @@ def create_product(tags:str = Form(...) , description : str=Form(...), stock : i
 # Recuperation des articles avec recherche
 @router.get("/products", status_code=status.HTTP_200_OK, response_model = List[schemas.ProductView])
 def get_all(search: Optional[str]="",category:Optional[int]=0, genre:Optional[int]=0,stock:Optional[str]="all", limit:Optional[int]=0, db:Session=Depends(database.get_db), ):
-    products = db.query(models.Product).all()
+    products = db.query(models.Product).order_by(models.Product.created_at.desc()).all()
 
     return products
 
 
 # Recuperation d'un seul produit par ID
-@router.get('/products/{id}', status_code=status.HTTP_200_OK, response_model=schemas.ProductEdit)
-def get_product(id:int, db:Session=Depends(database.get_db), current_user:int=Depends(Oauth.get_current_user)):
+@router.get('/products/{id}', status_code=status.HTTP_200_OK, response_model=schemas.ProductView)
+def get_product(id:int, db:Session=Depends(database.get_db)):
     return ProductServices.find_product_by_id(id, db)
 
 
@@ -66,7 +66,6 @@ def get_stock(id:int, db:Session=Depends(database.get_db), current_user:int=Depe
     ProductServices.find_product_by_id(id, db)
     stocks = db.query(models.Stock).filter(models.Stock.product_id == id).all()
     return stocks
-
 
 
 
@@ -86,8 +85,16 @@ def add_stock(content: schemas.AddSStock, db:Session=Depends(database.get_db), c
 
 # Modification d'un article par ID
 @router.put('/products/{id}', status_code=status.HTTP_202_ACCEPTED)
-def edit_product(id:int,is_new:bool=Form(...), is_available:bool=Form(...), brand:str=Form(...), category_id:int=Form(...), genre_id:int=Form(...), description:str=Form(""), price:int=Form(...), purchase_price:int=Form(...), min_stock:int=Form(...), image:UploadFile=File(None), db:Session=Depends(database.get_db), current_user:int=Depends(Oauth.get_current_user)):
-    return ProductServices.update_product(PUBLIC_PATH, ALLOW_FILE_EXTENSION, id, is_new, is_available, brand, category_id, genre_id, description, price, purchase_price, min_stock, image, db)
+def edit_product(id:int,description : str=Form(...), stock : int = Form(...), p_status : str = Form(...),  brand:str=Form(...), category_id:int=Form(...), price:int=Form(...),
+                     db:Session=Depends(database.get_db), current_user:int=Depends(Oauth.get_current_user)):
+    query = db.query(models.Product).filter(models.Product.id == id)
+    product = query.first()
+    if not product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Articles non Trouvé")
+
+    query.update({"description": description, "stock":stock, "status": p_status, "brand":brand, "category_id":category_id, "price":price, "last_price":product.last_price}, synchronize_session=False)
+    db.commit()
+    return {"message": "Article mis à jour"}
 
 
 # Suppression d'un article par ID
@@ -113,6 +120,64 @@ def remove_variant_stock(product_id:int, size_id:int, color_id:int, db:Session=D
         ProductsColorsServices.remove_variant_color(product_id, color_id, db)
     StockServices.remove_stock_size(product_id, size_id, color_id, db)
 
+
+
+@router.post('/{product_id}/images', status_code=status.HTTP_201_CREATED)
+def add_image(product_id:int, images: list[UploadFile]=File(...), db:Session=Depends(database.get_db)):
+    verify_product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    if not verify_product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="impossible de trouver le produit")
+    for image in images:
+        image_url = utils.upload_pictures(PUBLIC_PATH, image, ALLOW_FILE_EXTENSION)
+        new_image = models.Images(product_id = product_id, image_url=image_url)
+        db.add(new_image)
+        db.commit()
+
+    return {"message": "Image ajouté"}
+
+
+@router.delete('/products/images/{img_id}', status_code=status.HTTP_204_NO_CONTENT)
+def remove_image(img_id:int, db:Session=Depends(database.get_db)):
+    query = db.query(models.Images).filter(models.Images.id == img_id)
+    verify_img = query.first()
+    if not verify_img:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="impossible de trouver l'image")
+    query.delete(synchronize_session=False)
+    db.commit()
+    return {"message": "Image supprimé"}
+
+
+
+
+@router.patch('/products/{product_id}/stock/increment', status_code=status.HTTP_202_ACCEPTED)
+def increment_stock(product_id:int, db:Session=Depends(database.get_db)):
+    query = db.query(models.Product).filter(models.Product.id==product_id)
+    product = query.first()
+    if not product:
+        raise HTTPException(status_code = status.HTTP_404_NOT_FOUND,detail="Impossible de trouver le produit")
+    query.update({"stock": product.stock + 1 }, synchronize_session=False)
+    db.commit()
+
+
+@router.patch('/products/{product_id}/stock/decrement', status_code=status.HTTP_202_ACCEPTED)
+def decrement_stock(product_id:int, db:Session=Depends(database.get_db)):
+    query = db.query(models.Product).filter(models.Product.id==product_id)
+    product = query.first()
+    if not product:
+        raise HTTPException(status_code = status.HTTP_404_NOT_FOUND,detail="Impossible de trouver le produit")
+    query.update({"stock": product.stock - 1}, synchonize_session=False)
+    db.commit()
+
+
+@router.patch('/products/{product_id}/stock/add', status_code=status.HTTP_202_ACCEPTED)
+def add_stock(product_id:int, stock: schemas.Stock, db:Session=Depends(database.get_db)):
+    query = db.query(models.Product).filter(models.Product.id==product_id)
+    product = query.first()
+    if not product:
+        raise HTTPException(status_code = status.HTTP_404_NOT_FOUND,detail="Impossible de trouver le produit")
+    query.update({"stock": product.stock + stock.stock}, synchronize_session=False)
+    db.commit()
+    return {"message":"stock ajouté"}
 
 
 
