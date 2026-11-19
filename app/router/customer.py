@@ -26,7 +26,7 @@ def create_customer(content: schemas.CustomerCreation,  db: Session = Depends(da
     db.commit()
     db.refresh(new_customer)
     send_test_email(new_customer.email, (
-        "Bienvenue dans a communauté !!"
+        "Bienvenue dans la communauté !!"
         ""
     ))
 

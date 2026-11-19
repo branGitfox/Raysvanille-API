@@ -70,7 +70,7 @@ from html import escape
 
 BRAND = {
     "name": "Ray's Vanille",
-    "site": "https://raysvanille.vercel.app/",
+    "site": "http://57.128.67.164/",
     "logo_url": "http://57.128.67.164/Logo_Ray_s_Vanille.avif",  # URL publique de ton logo (laisse vide pour afficher le nom en texte)
     "bg": "#F6EFE3",        # fond crème
     "card": "#FFFDF8",      # carte blanche cassée
