@@ -25,13 +25,16 @@ def create_customer(content: schemas.CustomerCreation,  db: Session = Depends(da
     db.add(new_customer)
     db.commit()
     db.refresh(new_customer)
+    send_test_email(new_customer.email, (
+        "Bienvenue dans a communauté !!"
+        ""
+    ))
 
 
 
 @router.get('/', status_code=status.HTTP_200_OK, response_model=List[schemas.CustomerView])
 def get_customers( db:Session = Depends(database.get_db)):
     customers = db.query(models.Customer).all()
-    send_test_email()
     return customers
 
 

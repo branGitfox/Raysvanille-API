@@ -71,7 +71,7 @@ from html import escape
 BRAND = {
     "name": "Ray's Vanille",
     "site": "https://raysvanille.vercel.app/",
-    "logo_url": "",  # URL publique de ton logo (laisse vide pour afficher le nom en texte)
+    "logo_url": "http://57.128.67.164/Logo_Ray_s_Vanille.avif",  # URL publique de ton logo (laisse vide pour afficher le nom en texte)
     "bg": "#F6EFE3",        # fond crème
     "card": "#FFFDF8",      # carte blanche cassée
     "text": "#3B2A1E",      # brun foncé
@@ -179,11 +179,11 @@ from email.message import EmailMessage
 from email.utils import formataddr
 
 
-def send_test_email():
+def send_test_email(to_email: str, message:str):
     email_user = "raysvanille@gmail.com"
     email_password = "jpyk otxt vvst rzdc"
 
-    to_email = "raysvanille@gmail.com"
+    to_email = to_email
 
     server = "smtp.gmail.com"
     port = 587
@@ -191,10 +191,7 @@ def send_test_email():
     subject = "Bienvenue chez Ray's Vanille"
     first_name = "Client"
 
-    message = (
-        "Merci pour votre intérêt. Découvrez nos gousses de vanille, "
-        "sélectionnées avec soin et préparées dans le respect de la tradition."
-    )
+    message = message
 
     cta_url = BRAND["site"]
 
