@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.database import database
 from app.database.schemas import schemas
 from app.database.models import models
+from app.utils.utils import send_test_email
 
 router = APIRouter(prefix='/orders', tags=["Orders"])
 
@@ -29,6 +30,8 @@ def create_orders(content: schemas.OrderCreation, db:Session = Depends(database.
         new_order_item.order_id = new_orders.id
         db.add(new_order_item)
         db.commit()
+    # je dois envoyer un mali ici
+    send_test_email(user_exist.email, f"Nous avons bien recu votre commande <a href='test'>{new_orders.code}</a>")
     return {"message": "commande envoyée", "code": new_orders.code}
 
 
