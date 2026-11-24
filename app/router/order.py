@@ -46,7 +46,7 @@ def create_orders(content: schemas.OrderCreation, db:Session = Depends(database.
         db.commit()
     # je dois envoyer un mali ici, je dois encor pesonnaliser le template ici
 
-    send_test_email(user_exist.email, "Nous avons bien recu votre commande <a href='test'>{new_orders.code}</a>")
+    send_test_email(content.email, "Nous avons bien recu votre commande <a href='test'>{new_orders.code}</a>")
     return {"message": "commande envoyée", "code": new_orders.code}
 
 
