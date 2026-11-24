@@ -1,4 +1,5 @@
 import json
+from email.message import EmailMessage
 from typing import List
 
 from fastapi import APIRouter, HTTPException, status, Depends
@@ -14,12 +15,24 @@ router = APIRouter(prefix='/orders', tags=["Orders"])
 # pour la creation d'une commande
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def create_orders(content: schemas.OrderCreation, db:Session = Depends(database.get_db)):
-    user_exist = db.query(models.Customer).filter(models.Customer.email == content.email).first()
-    if not user_exist:
-         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Impossible de valider cette commande, Session refusé")
+    user = None
+    if content.type == "auth":
+        user_exist = db.query(models.Customer).filter(models.Customer.email == content.email).first()
+        user = user_exist
+        if not user_exist:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Impossible de valider cette commande, Session refusé")
+    else:
+        user_exist = db.query(models.Customer).filter(models.Customer.email == content.email).first()
+        user = user_exist
+        if not user_exist:
+            new_customer = models.Customer(client_name=content.customer_name, picture_url="https://userplaceholder", email=content.email)
+            db.add(new_customer)
+            db.commit()
+            db.refresh(user)
+
     order_count = db.query(models.Orders).count()
     code = f"#RV-{order_count:000000}"
-    new_orders = models.Orders(phone=content.phone, customer_name=content.customer_name, city = content.city, code = code, localisation=content.localisation, total_purchase=content.total_purchase, status="pending", customer_id=user_exist.id)
+    new_orders = models.Orders(phone=content.phone, customer_name=content.customer_name, city = content.city, code = code, localisation=content.localisation, total_purchase=content.total_purchase, status="pending", customer_id=user.id)
     db.add(new_orders)
 
     db.commit()
@@ -30,8 +43,9 @@ def create_orders(content: schemas.OrderCreation, db:Session = Depends(database.
         new_order_item.order_id = new_orders.id
         db.add(new_order_item)
         db.commit()
-    # je dois envoyer un mali ici
-    send_test_email(user_exist.email, f"Nous avons bien recu votre commande <a href='test'>{new_orders.code}</a>")
+    # je dois envoyer un mali ici, je dois encor pesonnaliser le template ici
+
+    send_test_email(user_exist.email, "Nous avons bien recu votre commande <a href='test'>{new_orders.code}</a>")
     return {"message": "commande envoyée", "code": new_orders.code}
 
 

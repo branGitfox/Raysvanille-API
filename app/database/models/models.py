@@ -50,7 +50,7 @@ class Customer(Base):
     client_name = Column(String(50), nullable=False)
     phone = Column(Numeric, nullable=True)
     picture_url = Column(Text, nullable=False)
-
+    # mailable = Column(Boolean, server_default="true", nullable=False)
     email = Column(String, nullable=False)
     orders = relationship('Orders', back_populates="customer")
     created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
@@ -80,7 +80,7 @@ class Genre(Base):
 
 class Product(Base):
     __tablename__ = "products"
-    id = Column(Integer, primary_key=True, nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, nullable=False)
     brand = Column(String(50), nullable=False)
     category_id = Column(Integer, ForeignKey('categories.id', ondelete="CASCADE"),  nullable=False)
     description = Column(Text, nullable=True)

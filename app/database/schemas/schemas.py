@@ -529,6 +529,7 @@ class OrderCreation(BaseModel):
     localisation:str
     total_purchase:int
     email:EmailStr
+    type:str
     items:str
 
 
