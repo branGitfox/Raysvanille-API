@@ -50,7 +50,7 @@ class Customer(Base):
     client_name = Column(String(50), nullable=False)
     phone = Column(Numeric, nullable=True)
     picture_url = Column(Text, nullable=False)
-    # mailable = Column(Boolean, server_default="true", nullable=False)
+    mailable = Column(Boolean, server_default="true", nullable=False)
     email = Column(String, nullable=False)
     orders = relationship('Orders', back_populates="customer")
     created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
@@ -99,7 +99,7 @@ class Tag(Base):
         id = Column(Integer, primary_key=True, nullable=False)
         tag_name = Column(String(50), nullable=False)
         quantity = Column(Integer, nullable=False)
-        product_id = Column(Integer, ForeignKey('products.id', ondelete="CASCADE"))
+        product_id = Column(UUID(as_uuid=True), ForeignKey('products.id', ondelete="CASCADE"))
         product = relationship('Product', back_populates='tags')
 
 # Pour les images
@@ -108,7 +108,7 @@ class Images(Base):
     id = Column(Integer, primary_key=True, nullable=False)
     image_url = Column(Text, nullable=False)
     product = relationship('Product', back_populates='images')
-    product_id = Column(Integer, ForeignKey('products.id', ondelete="CASCADE"))
+    product_id = Column(UUID(as_uuid=True), ForeignKey('products.id', ondelete="CASCADE"))
 
 
 
@@ -141,6 +141,7 @@ class Orders(Base):
      code = Column(String, unique=True, nullable=False)
      customer_name = Column(String, nullable=False)
      city = Column(String, nullable=False)
+     description = Column(Text, nullable=True)
      localisation = Column(String, nullable=False)
      total_purchase = Column(Integer, nullable=False)
      status = Column(String, nullable=False)

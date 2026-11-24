@@ -199,7 +199,7 @@ class VariantsEdit(BaseModel):
 
 
 class Product(BaseModel):
-    id:int
+    id:str
     brand:str
     description:str
     price:int
@@ -364,7 +364,7 @@ class PortfolioSupplyHistoryCreation(BaseModel):
 
 class InvoiceItem(BaseModel):
     # invoice_id :int
-    product_id : int
+    product_id : uuid.UUID
     color_id :int
     size_id :int
     color_name : str
@@ -376,7 +376,7 @@ class InvoiceItem(BaseModel):
 
 class InvoiceItemView(BaseModel):
     invoice_id :int
-    product_id : int
+    product_id : uuid.UUID
     color_id :int
     size_id :int
     color_name : str
@@ -458,7 +458,7 @@ class ImageView(BaseModel):
 
 
 class ProductView(BaseModel):
-    id: int
+    id: uuid.UUID
     brand: str
     description: str
     price: float
@@ -509,7 +509,7 @@ class ContentOut(ContentBase):
 
 # liste des artiles dans les commandes
 class OrderItemCreation(BaseModel):
-    item_id:int
+    item_id:uuid.UUID
     item_name:str
     quantity:int
     tag:Optional[str]
@@ -525,6 +525,7 @@ class OrderItemView(BaseModel):
 class OrderCreation(BaseModel):
     customer_name:str
     city:str
+    description:str
     phone:str
     localisation:str
     total_purchase:int
@@ -542,6 +543,7 @@ class OrderView(BaseModel):
     phone:str
     status:str
     code:str
+    description:str
     customer:CustomerView
     items: List[OrderItemView]
     created_at:datetime

@@ -1,3 +1,4 @@
+import uuid
 from typing import List
 from fastapi import HTTPException, status, UploadFile
 from sqlalchemy.orm import Session
@@ -14,7 +15,7 @@ class ProductServices:
 
     # rechercher un article par son ID
     @staticmethod
-    def find_product_by_id(product_id:int, db:Session):
+    def find_product_by_id(product_id: uuid.UUID, db:Session):
         product =  ProductRepository.find_by_id(product_id, db)
         if not product:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Article non trouvé")

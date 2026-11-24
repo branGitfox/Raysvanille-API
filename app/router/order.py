@@ -2,6 +2,7 @@ import json
 from email.message import EmailMessage
 from typing import List
 
+
 from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy.orm import Session
 from app.database import database
@@ -28,11 +29,11 @@ def create_orders(content: schemas.OrderCreation, db:Session = Depends(database.
             new_customer = models.Customer(client_name=content.customer_name, picture_url="https://userplaceholder", email=content.email)
             db.add(new_customer)
             db.commit()
-            db.refresh(user)
+            user = db.query(models.Customer).filter(models.Customer.email == content.email).first()
 
     order_count = db.query(models.Orders).count()
     code = f"#RV-{order_count:000000}"
-    new_orders = models.Orders(phone=content.phone, customer_name=content.customer_name, city = content.city, code = code, localisation=content.localisation, total_purchase=content.total_purchase, status="pending", customer_id=user.id)
+    new_orders = models.Orders(phone=content.phone, customer_name=content.customer_name, city = content.city, code = code, localisation=content.localisation, total_purchase=content.total_purchase, status="pending", customer_id=user.id, description=content.description)
     db.add(new_orders)
 
     db.commit()

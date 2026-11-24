@@ -1,9 +1,9 @@
-
+import uuid
 from typing import List, Optional
 import json
 from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form, Depends
 from pygments.styles import default
-
+from uuid import uuid4
 from app.utils import utils
 from app.auth import Oauth
 from app.database import database
@@ -30,7 +30,7 @@ def create_product(tags:str = Form(...) , description : str=Form(...), stock : i
     verify_redondance = db.query(models.Product).filter(models.Product.brand == brand).first()
     if verify_redondance:
         raise HTTPException(status_code =status.HTTP_400_BAD_REQUEST, detail="Ce nom de produit existe deja")
-    new_product = models.Product(description=description, stock=stock,status = p_status, brand=brand, category_id = category_id, price = price, last_price=price, min_stock=3)
+    new_product = models.Product(id= uuid4(),description=description, stock=stock,status = p_status, brand=brand, category_id = category_id, price = price, last_price=price, min_stock=3)
     db.add(new_product)
     db.commit()
     db.refresh(new_product)
@@ -56,13 +56,13 @@ def get_all(search: Optional[str]="",category:Optional[int]=0, genre:Optional[in
 
 # Recuperation d'un seul produit par ID
 @router.get('/products/{id}', status_code=status.HTTP_200_OK, response_model=schemas.ProductView)
-def get_product(id:int, db:Session=Depends(database.get_db)):
+def get_product(id:uuid.UUID, db:Session=Depends(database.get_db)):
     return ProductServices.find_product_by_id(id, db)
 
 
 # Recuperation des stocks par combinaison (size_id, color_id, count)
 @router.get('/products/stocks/{id}', status_code=status.HTTP_200_OK, response_model=List[schemas.StockView])
-def get_stock(id:int, db:Session=Depends(database.get_db), current_user:int=Depends(Oauth.get_current_user)):
+def get_stock(id:uuid.UUID, db:Session=Depends(database.get_db), current_user:int=Depends(Oauth.get_current_user)):
     ProductServices.find_product_by_id(id, db)
     stocks = db.query(models.Stock).filter(models.Stock.product_id == id).all()
     return stocks
@@ -85,7 +85,7 @@ def add_stock(content: schemas.AddSStock, db:Session=Depends(database.get_db), c
 
 # Modification d'un article par ID
 @router.put('/products/{id}', status_code=status.HTTP_202_ACCEPTED)
-def edit_product(id:int,description : str=Form(...), stock : int = Form(...), p_status : str = Form(...),  brand:str=Form(...), category_id:int=Form(...), price:int=Form(...),
+def edit_product(id:uuid.UUID,description : str=Form(...), stock : int = Form(...), p_status : str = Form(...),  brand:str=Form(...), category_id:int=Form(...), price:int=Form(...),
                      db:Session=Depends(database.get_db), current_user:int=Depends(Oauth.get_current_user)):
     query = db.query(models.Product).filter(models.Product.id == id)
     product = query.first()
@@ -99,7 +99,7 @@ def edit_product(id:int,description : str=Form(...), stock : int = Form(...), p_
 
 # Suppression d'un article par ID
 @router.delete('/products/{id}', status_code=status.HTTP_204_NO_CONTENT)
-def delete_product(id:int , db:Session=Depends(database.get_db), current_user:int=Depends(Oauth.get_current_user)):
+def delete_product(id:uuid.UUID , db:Session=Depends(database.get_db), current_user:int=Depends(Oauth.get_current_user)):
     ProductServices.delete_product(id, db)
 
 
@@ -123,7 +123,7 @@ def remove_variant_stock(product_id:int, size_id:int, color_id:int, db:Session=D
 
 
 @router.post('/{product_id}/images', status_code=status.HTTP_201_CREATED)
-def add_image(product_id:int, images: list[UploadFile]=File(...), db:Session=Depends(database.get_db)):
+def add_image(product_id:uuid.UUID, images: list[UploadFile]=File(...), db:Session=Depends(database.get_db)):
     verify_product = db.query(models.Product).filter(models.Product.id == product_id).first()
     if not verify_product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="impossible de trouver le produit")
@@ -150,7 +150,7 @@ def remove_image(img_id:int, db:Session=Depends(database.get_db)):
 
 
 @router.patch('/products/{product_id}/stock/increment', status_code=status.HTTP_202_ACCEPTED)
-def increment_stock(product_id:int, db:Session=Depends(database.get_db)):
+def increment_stock(product_id:uuid.UUID, db:Session=Depends(database.get_db)):
     query = db.query(models.Product).filter(models.Product.id==product_id)
     product = query.first()
     if not product:
@@ -160,7 +160,7 @@ def increment_stock(product_id:int, db:Session=Depends(database.get_db)):
 
 
 @router.patch('/products/{product_id}/stock/decrement', status_code=status.HTTP_202_ACCEPTED)
-def decrement_stock(product_id:int, db:Session=Depends(database.get_db)):
+def decrement_stock(product_id:uuid.UUID, db:Session=Depends(database.get_db)):
     query = db.query(models.Product).filter(models.Product.id==product_id)
     product = query.first()
     if not product:
@@ -170,7 +170,7 @@ def decrement_stock(product_id:int, db:Session=Depends(database.get_db)):
 
 
 @router.patch('/products/{product_id}/stock/add', status_code=status.HTTP_202_ACCEPTED)
-def add_stock(product_id:int, stock: schemas.Stock, db:Session=Depends(database.get_db)):
+def add_stock(product_id:uuid.UUID, stock: schemas.Stock, db:Session=Depends(database.get_db)):
     query = db.query(models.Product).filter(models.Product.id==product_id)
     product = query.first()
     if not product:
