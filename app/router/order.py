@@ -47,11 +47,11 @@ async def create_orders(content: schemas.OrderCreation, background_tasks: Backgr
     # je dois envoyer un mali ici, je dois encor pesonnaliser le template ici
 
     await send_queued_mail(    "order_received", content.email, content.customer_name, background_tasks,
-    order_id=new_orders.id,
+    order_id=new_orders.code,
     items=items,
     total=content.total_purchase,
     cta_url=f"http://57.128.67.164/account/orders",
-    links=[("Contactez-nous", "http://57.128.67.164/contact")],)
+    links=[("Contactez-nous", "http://57.128.67.164/#contact")],)
     return {"message": "commande envoyée", "code": new_orders.code}
 
 
