@@ -185,7 +185,7 @@ def _order_block(items: Sequence[dict], total, currency: str, accent: str) -> st
         qty = it.get("quantity", 1)
         rows += (
             f'<tr>'
-            f'<td style="padding:8px 0;border-bottom:1px solid #EADFCB;font-size:14px;color:{b["text"]};">{escape(str(it.get("name", "")))}</td>'
+            f'<td style="padding:8px 0;border-bottom:1px solid #EADFCB;font-size:14px;color:{b["text"]};">{escape(str(it.get("item_name", "")))}</td>'
             f'<td align="center" style="padding:8px 0;border-bottom:1px solid #EADFCB;font-size:14px;color:{b["muted"]};">x{escape(str(qty))}</td>'
             f'<td align="right" style="padding:8px 0;border-bottom:1px solid #EADFCB;font-size:14px;color:{b["text"]};">{escape(_money(it.get("price", 0), currency))}</td>'
             f'</tr>'
