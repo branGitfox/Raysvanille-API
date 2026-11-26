@@ -11,6 +11,7 @@ class Setting(BaseSettings):
     db_password: str
     secret_key: str
     algorithm: str
+    smtp_password:str
     model_config = SettingsConfigDict(env_file=".env")
 
 
