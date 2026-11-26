@@ -175,19 +175,53 @@ def _money(value, currency: str) -> str:
         return f"{value} {currency}"
 
 
+def _item_label(it: dict) -> str:
+    """Nom de l'article, suivi du tag entre parenthèses s'il existe."""
+    name = str(it.get("name", "") or "")
+    tag = it.get("tag")
+    return f"{name} ({tag})" if tag else name
+
+
+def _normalize_items(items) -> list:
+    """Accepte des dicts ou des objets Pydantic (ex: OrderItemCreation) et renvoie
+    une liste de dicts avec les clés : name, quantity, price (ou None), tag."""
+    result = []
+    for it in items or []:
+        if isinstance(it, dict):
+            d = it
+        elif hasattr(it, "model_dump"):      # Pydantic v2
+            d = it.model_dump()
+        else:
+            d = vars(it)
+
+        price = d.get("price")
+        if price is None:
+            price = d.get("unit_price")
+
+        result.append({
+            "name": d.get("item_name") or d.get("name") or d.get("product_name") or d.get("title") or "",
+            "quantity": d.get("quantity", 1),
+            "price": price,                  # None si le prix n'est pas fourni
+            "tag": d.get("tag"),
+        })
+    return result
+
+
 def _order_block(items: Sequence[dict], total, currency: str, accent: str) -> str:
-    """Récapitulatif de commande. items = [{"name":..., "quantity":..., "price":...}]"""
+    """Récapitulatif de commande. items = [{"name", "quantity", "price" (optionnel), "tag" (optionnel)}]"""
     b = BRAND
     if not items and total is None:
         return ""
     rows = ""
     for it in items or []:
         qty = it.get("quantity", 1)
+        price = it.get("price")
+        price_cell = escape(_money(price, currency)) if price is not None else ""
         rows += (
             f'<tr>'
-            f'<td style="padding:8px 0;border-bottom:1px solid #EADFCB;font-size:14px;color:{b["text"]};">{escape(str(it.get("item_name", "")))}</td>'
+            f'<td style="padding:8px 0;border-bottom:1px solid #EADFCB;font-size:14px;color:{b["text"]};">{escape(_item_label(it))}</td>'
             f'<td align="center" style="padding:8px 0;border-bottom:1px solid #EADFCB;font-size:14px;color:{b["muted"]};">x{escape(str(qty))}</td>'
-            f'<td align="right" style="padding:8px 0;border-bottom:1px solid #EADFCB;font-size:14px;color:{b["text"]};">{escape(_money(it.get("price", 0), currency))}</td>'
+            f'<td align="right" style="padding:8px 0;border-bottom:1px solid #EADFCB;font-size:14px;color:{b["text"]};">{price_cell}</td>'
             f'</tr>'
         )
     total_row = ""
@@ -362,7 +396,10 @@ def _build_plain_text(kind: str, ctx: dict) -> str:
         currency = ctx.get("currency", BRAND["currency"])
         lines += [""]
         for it in ctx["items"]:
-            lines.append(f"- {it.get('name', '')} x{it.get('quantity', 1)} : {_money(it.get('price', 0), currency)}")
+            line = f"- {_item_label(it)} x{it.get('quantity', 1)}"
+            if it.get("price") is not None:
+                line += f" : {_money(it['price'], currency)}"
+            lines.append(line)
         if ctx.get("total") is not None:
             lines.append(f"Total : {_money(ctx['total'], currency)}")
 
@@ -382,14 +419,17 @@ def send_mail(kind: str, to_email: str, first_name: str, **context) -> bool:
 
     kind : "welcome" | "order_received" | "order_confirmed" | "order_cancelled"
     context (tous optionnels) :
-        order_id, items=[{"name","quantity","price"}], total, currency,
-        message, title, subject, preheader, cta_label, cta_url,
+        order_id,
+        items = liste de dicts ou d'objets Pydantic (OrderItemCreation...) avec
+                item_name/name, quantity, tag (optionnel), price (optionnel),
+        total, currency, message, title, subject, preheader, cta_label, cta_url,
         reason (motif d'annulation), links=[("Label", "https://...")]
     """
     if kind not in EMAIL_TEMPLATES:
         raise ValueError(f"Type d'email inconnu : {kind}")
 
     ctx = {"first_name": first_name, "brand": BRAND["name"], **context}
+    ctx["items"] = _normalize_items(ctx.get("items"))
     subject = _fmt(ctx.get("subject") or EMAIL_TEMPLATES[kind]["subject"], ctx)
 
     msg = EmailMessage()
