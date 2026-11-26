@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.database import database
 from app.database.schemas import schemas
 from app.database.models import models
-from app.utils.utils import send_test_email
+from app.utils.utils import send_test_email, send_queued_mail
 
 router = APIRouter(prefix='/orders', tags=["Orders"])
 
@@ -46,7 +46,7 @@ def create_orders(content: schemas.OrderCreation, db:Session = Depends(database.
         db.commit()
     # je dois envoyer un mali ici, je dois encor pesonnaliser le template ici
 
-    send_test_email(content.email, "Nous avons bien recu votre commande <a href='test'>{new_orders.code}</a>")
+    send_queued_mail(content.email, "Nous avons bien recu votre commande <a href='test'>{new_orders.code}</a>")
     return {"message": "commande envoyée", "code": new_orders.code}
 
 

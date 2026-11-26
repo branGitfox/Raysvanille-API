@@ -1,7 +1,7 @@
 from time import time
 from typing import List
 
-from fastapi import UploadFile
+from fastapi import UploadFile, BackgroundTasks
 from pwdlib import PasswordHash
 from app.config.config import settings
 from fastapi import HTTPException, status
@@ -233,3 +233,10 @@ def send_test_email(to_email: str, message:str):
 
     except Exception as e:
         print(f"Erreur d'envoi : {e}")
+
+
+
+# envoie queue de mail
+async def send_queued_mail(to_email:str, message:str, queue: BackgroundTasks):
+    queue.add_task(send_test_email, to_email, message)
+    return {"status": "email delivré"}
