@@ -73,13 +73,19 @@ def get_orders_by_email(email:str,db:Session=Depends(database.get_db)):
 # Ppour le changement de status de commande
 
 @router.put('/{order_id}', status_code=status.HTTP_202_ACCEPTED)
-def update_order_status(order_id:int, content: schemas.StatusUpdate,  db:Session = Depends(database.get_db)):
+async def update_order_status(order_id:int, content: schemas.StatusUpdate, background_tasks: BackgroundTasks,  db:Session = Depends(database.get_db)):
     query = db.query(models.Orders).filter(models.Orders.id == order_id)
     verify_order = query.first()
     if not verify_order:
         raise HTTPException(status_code = status.HTTP_404_NOT_FOUND,detail= " impossible de trouver la commande")
     query.update({"status": content.status }, synchronize_session= False)
     db.commit()
+    customer = db.query(models.Customer).filter(models.Customer.id == verify_order.customer_id).first()
+    if content.status == "confirmed":
+        await send_queued_mail("order_confirmed", customer.email, verify_order.customer_name,background_tasks, order_id=verify_order.code,total=verify_order.total_purchase )
+    else:
+        await send_queued_mail("order_cancelled", customer.email, verify_order.customer_name,background_tasks, order_id=verify_order.code,total=verify_order.total_purchase )
+
     return {"message": " Status de commande modifié"}
 
 

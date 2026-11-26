@@ -1,6 +1,6 @@
 
 from typing import Optional, List
-from fastapi import APIRouter, status, Depends, UploadFile, File, Form
+from fastapi import APIRouter, status, Depends, UploadFile, File, Form, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.database import database
 from app.auth import Oauth
@@ -8,7 +8,7 @@ from app.database.models import models
 from app.database.schemas import schemas
 from app.repositories.customerRepository import CustomerRepository
 from app.services.customerServices import CustomerServices
-from app.utils.utils import upload_pictures, send_test_email
+from app.utils.utils import upload_pictures, send_test_email, send_queued_mail
 
 router = APIRouter(prefix="/customers", tags=["Customers"])
 
@@ -17,7 +17,7 @@ PUBLIC_PATH = 'app/uploads/customers'
 
 #
 @router.post('/', status_code=status.HTTP_201_CREATED)
-def create_customer(content: schemas.CustomerCreation,  db: Session = Depends(database.get_db)):
+async def create_customer(content: schemas.CustomerCreation, background_tasks:BackgroundTasks, db: Session = Depends(database.get_db)):
     check_exist = db.query(models.Customer).filter(models.Customer.email == content.email).first()
     if check_exist:
         return
@@ -25,10 +25,7 @@ def create_customer(content: schemas.CustomerCreation,  db: Session = Depends(da
     db.add(new_customer)
     db.commit()
     db.refresh(new_customer)
-    send_test_email(new_customer.email, (
-        "Bienvenue dans la communauté ! 🎉"
-        ""
-    ))
+    await send_queued_mail("welcome",new_customer.email, new_customer.client_name, background_tasks)
 
 
 
