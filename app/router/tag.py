@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, status, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database.models import models
@@ -21,7 +23,7 @@ def delete_tag(tag_id:int, db:Session = Depends(database.get_db)):
 
 
 @router.post('/{product_id}', status_code=status.HTTP_201_CREATED)
-def add_tag(product_id:int, tag:schemas.Tags,  db:Session=Depends(database.get_db)):
+def add_tag(product_id: uuid.UUID, tag:schemas.Tags, db:Session=Depends(database.get_db)):
     verify_product = db.query(models.Product).filter(models.Product.id == product_id).first()
     if not verify_product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="impossible de trouver le produit")

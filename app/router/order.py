@@ -32,7 +32,7 @@ async def create_orders(content: schemas.OrderCreation, background_tasks: Backgr
             user = db.query(models.Customer).filter(models.Customer.email == content.email).first()
 
     order_count = db.query(models.Orders).count()
-    code = f"#RV-{order_count:000000}"
+    code = f"#RV-{order_count*10000}"
     new_orders = models.Orders(phone=content.phone, customer_name=content.customer_name, city = content.city, code = code, localisation=content.localisation, total_purchase=content.total_purchase, status="pending", customer_id=user.id, description=content.description)
     db.add(new_orders)
 

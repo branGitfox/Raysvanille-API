@@ -17,7 +17,7 @@ PUBLIC_PATH = 'app/uploads/customers'
 
 #
 @router.post('/', status_code=status.HTTP_201_CREATED)
-async def create_customer(content: schemas.CustomerCreation, background_tasks:BackgroundTasks, db: Session = Depends(database.get_db)):
+async  def create_customer(content: schemas.CustomerCreation, background_tasks:BackgroundTasks, db: Session = Depends(database.get_db)):
     check_exist = db.query(models.Customer).filter(models.Customer.email == content.email).first()
     if check_exist:
         return
@@ -26,7 +26,7 @@ async def create_customer(content: schemas.CustomerCreation, background_tasks:Ba
     db.commit()
     db.refresh(new_customer)
     await send_queued_mail("welcome",new_customer.email, new_customer.client_name, background_tasks)
-
+    # return {"status": "ok"}
 
 
 @router.get('/', status_code=status.HTTP_200_OK, response_model=List[schemas.CustomerView])

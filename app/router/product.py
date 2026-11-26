@@ -50,7 +50,6 @@ def create_product(tags:str = Form(...) , description : str=Form(...), stock : i
 @router.get("/products", status_code=status.HTTP_200_OK, response_model = List[schemas.ProductView])
 def get_all(search: Optional[str]="",category:Optional[int]=0, genre:Optional[int]=0,stock:Optional[str]="all", limit:Optional[int]=0, db:Session=Depends(database.get_db), ):
     products = db.query(models.Product).order_by(models.Product.created_at.desc()).all()
-
     return products
 
 
@@ -122,7 +121,7 @@ def remove_variant_stock(product_id:int, size_id:int, color_id:int, db:Session=D
 
 
 
-@router.post('/{product_id}/images', status_code=status.HTTP_201_CREATED)
+@router.post('/products/{product_id}/images', status_code=status.HTTP_201_CREATED)
 def add_image(product_id:uuid.UUID, images: list[UploadFile]=File(...), db:Session=Depends(database.get_db)):
     verify_product = db.query(models.Product).filter(models.Product.id == product_id).first()
     if not verify_product:
