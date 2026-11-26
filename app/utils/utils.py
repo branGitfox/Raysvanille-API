@@ -1,5 +1,5 @@
 from time import time
-from typing import List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple, TypedDict
 
 from fastapi import UploadFile, BackgroundTasks
 from pwdlib import PasswordHash
@@ -80,11 +80,12 @@ BRAND = {
     "dark": "#2B1D14",      # brun très foncé (header/footer)
 }
 
-# Identifiants SMTP : à mettre dans des variables d'environnement (ou dans settings)
+# Identifiants SMTP : lus depuis settings (.env) ou, à défaut, depuis l'environnement.
+# Dans settings, ajoute : smtp_user: str = "..."  et  smtp_password: str = ""
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER = os.getenv("SMTP_USER", "raysvanille@gmail.com")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_USER = getattr(settings, "smtp_user", None) or os.getenv("SMTP_USER", "raysvanille@gmail.com")
+SMTP_PASSWORD = (getattr(settings, "smtp_password", None) or os.getenv("SMTP_PASSWORD", "")).replace(" ", "")
 
 
 # ----------------------------------------------------------------------
@@ -92,7 +93,17 @@ SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 # {first_name} {order_id} {total} {brand} ... (toute clé passée dans le contexte)
 # Dans les messages, tu peux aussi mettre des liens : [texte du lien](https://...)
 # ----------------------------------------------------------------------
-EMAIL_TEMPLATES = {
+class EmailTemplate(TypedDict):
+    subject: str
+    title: str
+    message: str
+    cta_label: str
+    preheader: str
+    accent: str
+    show_order: bool
+
+
+EMAIL_TEMPLATES: dict[str, EmailTemplate] = {
     "welcome": {
         "subject": "Bienvenue chez {brand}",
         "title": "Bienvenue chez {brand} !",
@@ -428,6 +439,10 @@ def send_mail(kind: str, to_email: str, first_name: str, **context) -> bool:
     if kind not in EMAIL_TEMPLATES:
         raise ValueError(f"Type d'email inconnu : {kind}")
 
+    if not SMTP_PASSWORD:
+        print("Erreur : SMTP_PASSWORD est vide (vérifie ton .env / settings).")
+        return False
+
     ctx = {"first_name": first_name, "brand": BRAND["name"], **context}
     ctx["items"] = _normalize_items(ctx.get("items"))
     subject = _fmt(ctx.get("subject") or EMAIL_TEMPLATES[kind]["subject"], ctx)
@@ -440,20 +455,27 @@ def send_mail(kind: str, to_email: str, first_name: str, **context) -> bool:
     msg.add_alternative(build_html(kind, ctx), subtype="html")
 
     try:
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=30) as smtp:
-            smtp.ehlo()
-            smtp.starttls()
-            smtp.ehlo()
-            smtp.login(SMTP_USER, SMTP_PASSWORD)
-            smtp.send_message(msg)
+        if SMTP_PORT == 465:
+            with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, timeout=30) as smtp:
+                smtp.login(SMTP_USER, SMTP_PASSWORD)
+                smtp.send_message(msg)
+        else:
+            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=30) as smtp:
+                smtp.ehlo()
+                smtp.starttls()
+                smtp.ehlo()
+                smtp.login(SMTP_USER, SMTP_PASSWORD)
+                smtp.send_message(msg)
 
         print("Email envoyé avec succès !")
         return True
 
     except smtplib.SMTPAuthenticationError:
-        print("Erreur : authentification Gmail échouée.")
+        print("Erreur : authentification Gmail échouée (mauvais mot de passe d'application ?).")
+    except smtplib.SMTPServerDisconnected as e:
+        print(f"Erreur : connexion fermée par le serveur SMTP ({e}). Vérifie le mot de passe et l'accès réseau au port {SMTP_PORT}.")
     except Exception as e:
-        print(f"Erreur d'envoi : {e}")
+        print(f"Erreur d'envoi : {type(e).__name__}: {e}")
     return False
 
 
