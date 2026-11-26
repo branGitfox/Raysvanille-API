@@ -179,7 +179,7 @@ from email.message import EmailMessage
 from email.utils import formataddr
 
 
-def send_test_email(to_email: str, message:str):
+async def send_test_email(to_email: str, message:str):
     email_user = "raysvanille@gmail.com"
     email_password = "jpyk otxt vvst rzdc"
 
