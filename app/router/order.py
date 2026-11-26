@@ -3,7 +3,7 @@ from email.message import EmailMessage
 from typing import List
 
 
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.database import database
 from app.database.schemas import schemas
@@ -15,7 +15,7 @@ router = APIRouter(prefix='/orders', tags=["Orders"])
 
 # pour la creation d'une commande
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def create_orders(content: schemas.OrderCreation, db:Session = Depends(database.get_db)):
+async def create_orders(content: schemas.OrderCreation, background_tasks: BackgroundTasks, db:Session = Depends(database.get_db)):
     user = None
     if content.type == "auth":
         user_exist = db.query(models.Customer).filter(models.Customer.email == content.email).first()
@@ -46,7 +46,12 @@ def create_orders(content: schemas.OrderCreation, db:Session = Depends(database.
         db.commit()
     # je dois envoyer un mali ici, je dois encor pesonnaliser le template ici
 
-    send_queued_mail(content.email, "Nous avons bien recu votre commande <a href='test'>{new_orders.code}</a>")
+    await send_queued_mail(    "order_received", content.email, content.customer_name, background_tasks,
+    order_id=new_orders.id,
+    items=items,
+    total=content.total_purchase,
+    cta_url=f"http://57.128.67.164/account/orders",
+    links=[("Contactez-nous", "http://57.128.67.164/contact")],)
     return {"message": "commande envoyée", "code": new_orders.code}
 
 
